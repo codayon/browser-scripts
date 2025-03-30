@@ -1,20 +1,17 @@
 // ==UserScript==
 // @name         Clearify
+// @description  Blurs all images until toggled to unblur or hovered over.
 // @namespace    https://github.com/codayon/browser-scripts/tree/main/blur-img
-// @version      2.0
-// @description  Blurs all images until toggled to unblur or hover to unblur.
-// @exclude      https://github.com/codayon
-// @author       codayon, ChatGPT
 // @match        *://*/*
 // @grant        none
+// @version      2.1
 // ==/UserScript==
 
 (function () {
   "use strict";
 
-  const blurEffect = "blur(20px)";
-  let blurEnabled = true,
-    buttonsVisible = true;
+  const blurEffect = "blur(10px)";
+  let blurEnabled = true;
 
   function createButton(
     text,
@@ -23,35 +20,27 @@
     borderRadius,
     clickHandler
   ) {
-    const button = document.createElement("button");
-    Object.assign(button.style, {
+    const btn = document.createElement("button");
+    Object.assign(btn.style, {
       padding: "8px 12px",
       backgroundColor: bgColor,
-      color: "#FFFFFF",
+      color: "#FFF",
       border: `2px solid ${borderColor}`,
       borderRadius,
       fontSize: "14px",
       cursor: "pointer",
       transition: "all 0.3s ease",
     });
-    button.textContent = text;
-    button.addEventListener("mouseenter", () => {
-      button.style.backgroundColor = darkenColor(bgColor);
-      button.style.borderColor = darkenColor(borderColor);
-    });
-    button.addEventListener("mouseleave", () => {
-      button.style.backgroundColor = bgColor;
-      button.style.borderColor = borderColor;
-    });
-    button.addEventListener("click", clickHandler);
-    return button;
+    btn.textContent = text;
+    btn.onmouseenter = () => (btn.style.backgroundColor = darkenColor(bgColor));
+    btn.onmouseleave = () => (btn.style.backgroundColor = bgColor);
+    btn.onclick = clickHandler;
+    return btn;
   }
 
   function darkenColor(hex) {
-    let num = parseInt(hex.slice(1), 16);
-    const amt = 0x202020;
-    num = Math.max(0, num - amt);
-    return `#${num.toString(16).padStart(6, "0")}`;
+    let num = parseInt(hex.slice(1), 16) - 0x202020;
+    return `#${Math.max(0, num).toString(16).padStart(6, "0")}`;
   }
 
   function createToggleButton() {
@@ -59,66 +48,41 @@
     Object.assign(container.style, {
       position: "fixed",
       bottom: "25px",
-      right: "25px",
+      left: "25px",
       zIndex: "9999",
       display: "flex",
     });
-
-    const toggleButton = createButton(
-      "Toggle Blur",
-      "#333333",
-      "#555555",
-      "10px 0 0 10px",
-      toggleBlur
+    container.append(
+      createButton("Hide", "#E74C3C", "#C0392B", "10px 0 0 10px", () =>
+        container.remove()
+      ),
+      createButton("Toggle Blur", "#333", "#555", "0 10px 10px 0", toggleBlur)
     );
-    const hideButton = createButton(
-      "Hide",
-      "#E74C3C",
-      "#C0392B",
-      "0 10px 10px 0",
-      () => {
-        container.style.display = "none";
-        buttonsVisible = false;
-      }
-    );
-
-    container.append(toggleButton, hideButton);
     document.body.appendChild(container);
   }
 
   function applyBlur() {
-    document.querySelectorAll("img").forEach((img) => {
-      img.style.filter = blurEffect;
+    document.querySelectorAll("img, ytd-thumbnail img").forEach((img) => {
+      img.style.filter = blurEnabled ? blurEffect : "none";
       img.style.transition = "filter 0.3s ease";
-      img.addEventListener("mouseenter", unblurOnHover);
-      img.addEventListener("mouseleave", reblurOnLeave);
+      img.style.clipPath = "inset(0)"; // Prevents blur bleeding outside
+      img.onmouseenter = () => (img.style.filter = "none");
+      img.onmouseleave = () =>
+        (img.style.filter = blurEnabled ? blurEffect : "none");
     });
   }
 
   function toggleBlur() {
     blurEnabled = !blurEnabled;
-    document.querySelectorAll("img").forEach((img) => {
-      img.style.filter = blurEnabled ? blurEffect : "none";
-    });
+    applyBlur();
   }
 
-  function unblurOnHover(event) {
-    event.target.style.filter = "none";
-  }
-
-  function reblurOnLeave(event) {
-    if (blurEnabled) event.target.style.filter = blurEffect;
-  }
-
+  new MutationObserver(applyBlur).observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
   window.addEventListener("load", () => {
     createToggleButton();
     applyBlur();
   });
-
-  const observer = new MutationObserver(() => {
-    applyBlur();
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  applyBlur(); // Apply blur immediately
 })();
