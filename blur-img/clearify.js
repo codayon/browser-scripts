@@ -1,18 +1,31 @@
 // ==UserScript==
-// @name         Clearify
-// @description  Blurs all images until toggled to unblur or hovered over.
+// @name         clearify
 // @namespace    https://github.com/codayon/browser-scripts/tree/main/blur-img
+// @description  Blurs all images until toggled to unblur or hovered over.
+// @copyright    2025, codayon (https://github.com/codayon)
+// @license      MIT
+// @version      2.1
 // @match        *://*/*
 // @grant        none
-// @version      2.1
+// @exclude      https://openuserjs.org/*
+// @exclude      https://greasyfork.org/*
+// @homepageURL  https://github.com/codayon/browser-scripts/tree/main/blur-img
+// @supportURL   https://github.com/codayon/browser-scripts/issues
+// @updateURL    https://openuserjs.org/meta/codayon/clearify.meta.js
 // ==/UserScript==
+
+// ==OpenUserJS==
+// @author codayon
+// ==/OpenUserJS==
 
 (function () {
   "use strict";
 
+  // Define the blur effect and enable it by default
   const blurEffect = "blur(10px)";
   let blurEnabled = true;
 
+  // Function to create a styled button
   function createButton(
     text,
     bgColor,
@@ -38,11 +51,13 @@
     return btn;
   }
 
+  // Function to darken a given color for hover effect
   function darkenColor(hex) {
     let num = parseInt(hex.slice(1), 16) - 0x202020;
     return `#${Math.max(0, num).toString(16).padStart(6, "0")}`;
   }
 
+  // Function to create the toggle button UI
   function createToggleButton() {
     const container = document.createElement("div");
     Object.assign(container.style, {
@@ -61,6 +76,7 @@
     document.body.appendChild(container);
   }
 
+  // Function to apply the blur effect to images
   function applyBlur() {
     document.querySelectorAll("img, ytd-thumbnail img").forEach((img) => {
       img.style.filter = blurEnabled ? blurEffect : "none";
@@ -72,15 +88,19 @@
     });
   }
 
+  // Function to toggle the blur effect
   function toggleBlur() {
     blurEnabled = !blurEnabled;
     applyBlur();
   }
 
+  // Observe changes in the DOM and reapply the blur effect if needed
   new MutationObserver(applyBlur).observe(document.body, {
     childList: true,
     subtree: true,
   });
+
+  // Initialize the script once the page has fully loaded
   window.addEventListener("load", () => {
     createToggleButton();
     applyBlur();
